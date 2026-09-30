@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
+import { corsHeaders } from "./cors";
+
 async function buildEcho(request: NextRequest) {
   const url = new URL(request.url);
   const headers: Record<string, string> = {};
@@ -47,14 +49,26 @@ async function buildEcho(request: NextRequest) {
   };
 }
 
-async function handle(request: NextRequest) {
-  const payload = await buildEcho(request);
+function jsonWithCors(request: NextRequest, payload: unknown, status = 200) {
   return NextResponse.json(payload, {
-    status: 200,
+    status,
     headers: {
       "Cache-Control": "no-store",
       "X-Loopback-Echo": "1",
+      ...corsHeaders(request),
     },
+  });
+}
+
+async function handle(request: NextRequest) {
+  const payload = await buildEcho(request);
+  return jsonWithCors(request, payload);
+}
+
+export async function OPTIONS(request: NextRequest) {
+  return new NextResponse(null, {
+    status: 204,
+    headers: corsHeaders(request),
   });
 }
 
@@ -64,4 +78,3 @@ export const PUT = handle;
 export const PATCH = handle;
 export const DELETE = handle;
 export const HEAD = handle;
-export const OPTIONS = handle;
